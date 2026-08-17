@@ -1,0 +1,71 @@
+# ===================================================
+# Modulo PolyFlow: BASIC-256 (Limpieza)
+# ===================================================
+
+open 1, "C:/Users/Laboratorio_M/Documents/NetBeansProjects/PolyFlow/data/entrada.csv"
+open 2, "C:/Users/Laboratorio_M/Documents/NetBeansProjects/PolyFlow/data/datos_normalizados.csv"
+
+# Leer y descartar el encabezado de entrada
+encabezado$ = read(1)
+
+# Escribir el nuevo encabezado en el archivo de salida
+writeline 2, "ID,ESTACION,TEMPERATURA,PRECIPITACION,VIENTO,BATERIA"
+
+while not eof(1)
+    registro$ = read(1)
+    largo = length(registro$)
+    if largo > 0 then
+        p1 = instr(registro$, ",")
+        if p1 > 0 then
+            id$ = left(registro$, p1 - 1)
+            resto1$ = mid(registro$, p1 + 1, largo)
+
+            p2 = instr(resto1$, ",")
+            if p2 > 0 then
+                estacion$ = left(resto1$, p2 - 1)
+                resto2$ = mid(resto1$, p2 + 1, largo)
+
+                p3 = instr(resto2$, ",")
+                if p3 > 0 then
+                    temp$ = left(resto2$, p3 - 1)
+                    resto3$ = mid(resto2$, p3 + 1, largo)
+
+                    p4 = instr(resto3$, ",")
+                    if p4 > 0 then
+                        precip$ = left(resto3$, p4 - 1)
+                        resto4$ = mid(resto3$, p4 + 1, largo)
+
+                        p5 = instr(resto4$, ",")
+                        if p5 > 0 then
+                            viento$ = left(resto4$, p5 - 1)
+                            bat$ = mid(resto4$, p5 + 1, largo)
+
+                            if id$ <> "" and estacion$ <> "" and temp$ <> "" and precip$ <> "" and viento$ <> "" and bat$ <> "" then
+                                t = float(temp$)
+                                p = float(precip$)
+                                v = float(viento$)
+                                b = float(bat$)
+
+                                valido = 1
+                                if t < -50 or t > 60 then valido = 0
+                                if p < 0 then valido = 0
+                                if v < 0 then valido = 0
+                                if b < 0 or b > 100 then valido = 0
+
+                                if valido = 1 then
+                                    writeline 2, registro$
+                                end if
+                            end if
+                        end if
+                    end if
+                end if
+            end if
+        end if
+    end if
+end while
+
+close 1
+close 2
+
+print "BASIC-256: Limpieza completada con exito."
+end
