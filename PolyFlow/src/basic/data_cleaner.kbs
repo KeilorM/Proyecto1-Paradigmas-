@@ -1,0 +1,99 @@
+# ==============================================================================
+# Module: Data Cleaner & Validator (Stage 1)
+# Language: BASIC-256
+# Author: Randall AC
+# Author: Keilor MC
+# Description:
+#   Parses raw meteorological telemetry records from 'data/entrada.csv', 
+#   validates string field completeness and numerical physical boundaries, 
+#   and outputs validated records to 'data/datos_normalizados.csv'.
+#
+# Constraints & Boundary Rules:
+#   - Temperature: -50.0 <= T <= 60.0 C
+#   - Precipitation: >= 0.0 mm
+#   - Wind Speed: >= 0.0 km/h
+#   - Battery Level: 0.0 <= B <= 100.0 %
+# ==============================================================================
+
+# Open input stream (raw CSV) and output stream (cleaned CSV)
+open 1, "C:/Users/randa/OneDrive/Documents/NetBeansProjects/Paradigmas/Proyecto1/Proyecto1-Paradigmas-/PolyFlow/data/entrada.csv"
+open 2, "C:/Users/randa/OneDrive/Documents/NetBeansProjects/Paradigmas/Proyecto1/Proyecto1-Paradigmas-/PolyFlow/data/datos_normalizados.csv"
+
+# Read and discard input CSV header
+header$ = read(1)
+
+# Write standardized output CSV header
+writeline 2, "ID,STATION,TEMPERATURE,PRECIPITATION,WIND,BATTERY"
+
+# Process input file line by line
+while not eof(1)
+    record$ = read(1)
+    record_length = length(record$)
+    
+    # Filter empty or blank lines (Stress test protection)
+    if record_length > 0 then
+        # Parse Field 1: ID
+        p1 = instr(record$, ",")
+        if p1 > 0 then
+            raw_id$ = left(record$, p1 - 1)
+            rest1$ = mid(record$, p1 + 1, record_length)
+
+            # Parse Field 2: Station
+            p2 = instr(rest1$, ",")
+            if p2 > 0 then
+                station$ = left(rest1$, p2 - 1)
+                rest2$ = mid(rest1$, p2 + 1, record_length)
+
+                # Parse Field 3: Temperature
+                p3 = instr(rest2$, ",")
+                if p3 > 0 then
+                    temp_str$ = left(rest2$, p3 - 1)
+                    rest3$ = mid(rest2$, p3 + 1, record_length)
+
+                    # Parse Field 4: Precipitation
+                    p4 = instr(rest3$, ",")
+                    if p4 > 0 then
+                        precip_str$ = left(rest3$, p4 - 1)
+                        rest4$ = mid(rest3$, p4 + 1, record_length)
+
+                        # Parse Field 5 & 6: Wind & Battery
+                        p5 = instr(rest4$, ",")
+                        if p5 > 0 then
+                            wind_str$ = left(rest4$, p5 - 1)
+                            battery_str$ = mid(rest4$, p5 + 1, record_length)
+
+                            # Stress Check: Ensure all 6 tokens are present and non-empty
+                            if raw_id$ <> "" and station$ <> "" and temp_str$ <> "" and precip_str$ <> "" and wind_str$ <> "" and battery_str$ <> "" then
+                                
+                                # Convert extracted substrings to numeric floats
+                                temp_val = float(temp_str$)
+                                precip_val = float(precip_str$)
+                                wind_val = float(wind_str$)
+                                battery_val = float(battery_str$)
+
+                                # Evaluate domain boundary constraints
+                                is_valid = 1
+                                if temp_val < -50 or temp_val > 60 then is_valid = 0
+                                if precip_val < 0 then is_valid = 0
+                                if wind_val < 0 then is_valid = 0
+                                if battery_val < 0 or battery_val > 100 then is_valid = 0
+
+                                # Write verified CSV record to cleaned output file
+                                if is_valid = 1 then
+                                    writeline 2, record$
+                                end if
+                            end if
+                        end if
+                    end if
+                end if
+            end if
+        end if
+    end if
+end while
+
+# Close all open file descriptors
+close 1
+close 2
+
+print "BASIC-256: Data cleaning completed successfully."
+end
