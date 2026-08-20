@@ -8,3 +8,4 @@ data/secuencia.txt
 data/reporte.html 
 *.exe 
 *.class
+dist/ 
