@@ -16,8 +16,8 @@
 # ==============================================================================
 
 # Open input stream (raw CSV) and output stream (cleaned CSV)
-open 1, "C:/Users/randa/OneDrive/Documents/NetBeansProjects/Paradigmas/Proyecto1/Proyecto1-Paradigmas-/PolyFlow/data/entrada.csv"
-open 2, "C:/Users/randa/OneDrive/Documents/NetBeansProjects/Paradigmas/Proyecto1/Proyecto1-Paradigmas-/PolyFlow/data/datos_normalizados.csv"
+open 1, "C:/Users/Laboratorio_M/Documents/Proyecto1-Paradigmas-/PolyFlow/data/entrada.csv"
+open 2, "C:/Users/Laboratorio_M/Documents/Proyecto1-Paradigmas-/PolyFlow/data/datos_normalizados.csv"
 
 # Read and discard input CSV header
 header$ = read(1)
