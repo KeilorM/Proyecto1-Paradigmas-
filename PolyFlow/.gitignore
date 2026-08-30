@@ -1,6 +1,6 @@
 bin/ 
-build/ 
-nbproject/private/ 
+build/
+nbproject/private/*
 data/datos_normalizados.csv 
 data/metricas.csv 
 data/alertas.csv 
