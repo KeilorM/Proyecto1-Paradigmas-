@@ -1,11 +1,11 @@
 bin/ 
 build/
 nbproject/private/*
-data/datos_normalizados.csv 
+data/datos_normalizados.csv
 data/metricas.csv 
 data/alertas.csv 
 data/secuencia.txt 
 data/reporte.html 
 *.exe 
 *.class
-dist/ 
+dist/

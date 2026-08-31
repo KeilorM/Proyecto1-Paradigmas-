@@ -1,99 +1,201 @@
 # ==============================================================================
-# Module: Data Cleaner & Validator (Stage 1)
+# Module: Data Cleaner and Validator
+# Stage: 1
 # Language: BASIC-256
-# Author: Randall AC
-# Author: Keilor MC
-# Description:
-#   Parses raw meteorological telemetry records from 'data/entrada.csv', 
-#   validates string field completeness and numerical physical boundaries, 
-#   and outputs validated records to 'data/datos_normalizados.csv'.
+# Authors: Randall AC, Keilor MC
 #
-# Constraints & Boundary Rules:
-#   - Temperature: -50.0 <= T <= 60.0 C
-#   - Precipitation: >= 0.0 mm
-#   - Wind Speed: >= 0.0 km/h
-#   - Battery Level: 0.0 <= B <= 100.0 %
+# Description:
+#   Reads raw environmental telemetry from the input CSV file, validates each
+#   record, and writes ONLY valid records to the normalized CSV file.
+#
+# Important behavior:
+#   Invalid records are DISCARDED.
+#   No invalid value is corrected, replaced, estimated, or repaired.
+#
+# Validation rules:
+#   - Exactly 6 CSV fields are required.
+#   - ID and STATION must not be empty.
+#   - Temperature must be numeric and between -50 and 60.
+#   - Precipitation must be numeric and non-negative.
+#   - Wind must be numeric and non-negative.
+#   - Battery must be numeric and between 0 and 100.
+#
+# Known limitation:
+#   BASIC-256 has no structured exception handling. If the input file
+#   ../../data/entrada.csv does not exist, "open" will fail with an
+#   interpreter-level error instead of a controlled message. Make sure
+#   the file exists before running this stage (the Java orchestrator
+#   checks for this before invoking BASIC-256).
+#
+# Input:
+#   ../../data/entrada.csv
+#
+# Output:
+#   ../../data/datos_normalizados.csv
 # ==============================================================================
 
-# Open input stream (raw CSV) and output stream (cleaned CSV)
-open 1, "C:/Users/randa/OneDrive/Documents/NetBeansProjects/Paradigmas/Proyecto1/Proyecto1-Paradigmas-/PolyFlow/data/entrada.csv"
-open 2, "C:/Users/randa/OneDrive/Documents/NetBeansProjects/Paradigmas/Proyecto1/Proyecto1-Paradigmas-/PolyFlow/data/datos_normalizados.csv"
+open 1, "../../data/entrada.csv"
+open 2, "../../data/datos_normalizados.csv"
 
-# Read and discard input CSV header
-header$ = read(1)
+# Read and discard the input CSV header.
+header$ = readline(1)
 
-# Write standardized output CSV header
+# Write the normalized CSV header.
 writeline 2, "ID,STATION,TEMPERATURE,PRECIPITATION,WIND,BATTERY"
 
-# Process input file line by line
+total_records = 0
+accepted_records = 0
+discarded_records = 0
+
 while not eof(1)
-    record$ = read(1)
-    record_length = length(record$)
-    
-    # Filter empty or blank lines (Stress test protection)
-    if record_length > 0 then
-        # Parse Field 1: ID
+
+    record$ = readline(1)
+
+    # Remove carriage return when present.
+    record$ = replace(record$, chr(13), "")
+
+    # Ignore physically empty lines.
+    if length(record$) > 0 then
+
+        total_records = total_records + 1
+
+        # --------------------------------------------------------------
+        # Locate the five CSV separators.
+        # --------------------------------------------------------------
+        record_length = length(record$)
+
         p1 = instr(record$, ",")
         if p1 > 0 then
-            raw_id$ = left(record$, p1 - 1)
+
+            raw_id$ = trim(left(record$, p1 - 1))
             rest1$ = mid(record$, p1 + 1, record_length)
 
-            # Parse Field 2: Station
             p2 = instr(rest1$, ",")
             if p2 > 0 then
-                station$ = left(rest1$, p2 - 1)
+
+                station$ = trim(left(rest1$, p2 - 1))
                 rest2$ = mid(rest1$, p2 + 1, record_length)
 
-                # Parse Field 3: Temperature
                 p3 = instr(rest2$, ",")
                 if p3 > 0 then
-                    temp_str$ = left(rest2$, p3 - 1)
+
+                    temp_str$ = trim(left(rest2$, p3 - 1))
                     rest3$ = mid(rest2$, p3 + 1, record_length)
 
-                    # Parse Field 4: Precipitation
                     p4 = instr(rest3$, ",")
                     if p4 > 0 then
-                        precip_str$ = left(rest3$, p4 - 1)
+
+                        precip_str$ = trim(left(rest3$, p4 - 1))
                         rest4$ = mid(rest3$, p4 + 1, record_length)
 
-                        # Parse Field 5 & 6: Wind & Battery
                         p5 = instr(rest4$, ",")
                         if p5 > 0 then
-                            wind_str$ = left(rest4$, p5 - 1)
-                            battery_str$ = mid(rest4$, p5 + 1, record_length)
 
-                            # Stress Check: Ensure all 6 tokens are present and non-empty
-                            if raw_id$ <> "" and station$ <> "" and temp_str$ <> "" and precip_str$ <> "" and wind_str$ <> "" and battery_str$ <> "" then
-                                
-                                # Convert extracted substrings to numeric floats
-                                temp_val = float(temp_str$)
-                                precip_val = float(precip_str$)
-                                wind_val = float(wind_str$)
-                                battery_val = float(battery_str$)
+                            wind_str$ = trim(left(rest4$, p5 - 1))
+                            battery_str$ = trim(mid(rest4$, p5 + 1, record_length))
 
-                                # Evaluate domain boundary constraints
-                                is_valid = 1
-                                if temp_val < -50 or temp_val > 60 then is_valid = 0
-                                if precip_val < 0 then is_valid = 0
-                                if wind_val < 0 then is_valid = 0
-                                if battery_val < 0 or battery_val > 100 then is_valid = 0
+                            # --------------------------------------------------
+                            # 1. Validate exactly six fields and required data.
+                            # --------------------------------------------------
+                            exact_fields = instr(battery_str$, ",") = 0
+                            fields_present = raw_id$ <> "" and station$ <> "" and temp_str$ <> "" and precip_str$ <> "" and wind_str$ <> "" and battery_str$ <> ""
 
-                                # Write verified CSV record to cleaned output file
-                                if is_valid = 1 then
-                                    writeline 2, record$
+                            if exact_fields and fields_present then
+
+                                # ----------------------------------------------
+                                # 2. Validate numeric format.
+                                # ----------------------------------------------
+                                numeric_pattern$ = "^-?\d+\.?\d*$"
+
+                                temp_numeric = instrx(temp_str$, numeric_pattern$) > 0
+                                precip_numeric = instrx(precip_str$, numeric_pattern$) > 0
+                                wind_numeric = instrx(wind_str$, numeric_pattern$) > 0
+                                battery_numeric = instrx(battery_str$, numeric_pattern$) > 0
+
+                                if temp_numeric and precip_numeric and wind_numeric and battery_numeric then
+
+                                    # ------------------------------------------
+                                    # 3. Convert only after numeric validation.
+                                    # ------------------------------------------
+                                    temp_val = float(temp_str$)
+                                    precip_val = float(precip_str$)
+                                    wind_val = float(wind_str$)
+                                    battery_val = float(battery_str$)
+
+                                    # ------------------------------------------
+                                    # 4. Validate physical ranges.
+                                    #
+                                    # Invalid values are discarded.
+                                    # No value is modified or repaired.
+                                    # ------------------------------------------
+                                    valid_ranges = temp_val >= -50 and temp_val <= 60 and precip_val >= 0 and wind_val >= 0 and battery_val >= 0 and battery_val <= 100
+
+                                    if valid_ranges then
+
+                                        # Preserve the original valid values.
+                                        normalized_record$ = raw_id$ + "," + station$ + "," + temp_str$ + "," + precip_str$ + "," + wind_str$ + "," + battery_str$
+
+                                        writeline 2, normalized_record$
+                                        accepted_records = accepted_records + 1
+
+                                    else
+
+                                        discarded_records = discarded_records + 1
+
+                                    end if
+
+                                else
+
+                                    discarded_records = discarded_records + 1
+
                                 end if
+
+                            else
+
+                                discarded_records = discarded_records + 1
+
                             end if
+
+                        else
+
+                            discarded_records = discarded_records + 1
+
                         end if
+
+                    else
+
+                        discarded_records = discarded_records + 1
+
                     end if
+
+                else
+
+                    discarded_records = discarded_records + 1
+
                 end if
+
+            else
+
+                discarded_records = discarded_records + 1
+
             end if
+
+        else
+
+            discarded_records = discarded_records + 1
+
         end if
+
     end if
+
 end while
 
-# Close all open file descriptors
 close 1
 close 2
 
 print "BASIC-256: Data cleaning completed successfully."
+print "Total records: " + total_records
+print "Accepted records: " + accepted_records
+print "Discarded records: " + discarded_records
+
 end
