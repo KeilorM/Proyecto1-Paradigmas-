@@ -333,6 +333,11 @@ handle_file_error:
 
     syscall
 
+    # Exit with a non-zero status so the Java orchestrator
+    # detects the Stage 4 failure.
+    li $v0, 17
+    li $a0, 1
+    syscall
 
 end_program:
 
