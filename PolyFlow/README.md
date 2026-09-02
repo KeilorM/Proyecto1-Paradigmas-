@@ -61,8 +61,9 @@ Desde la raíz del proyecto:
 chmod +x run_pipeline.sh
 ./run_pipeline.sh
 
-El script limpia los archivos compilados anteriores, compila el orquestador Java 
-y ejecuta el pipeline completo.
+El script limpia los archivos compilados anteriores, compila el orquestador Java
+y ejecuta el pipeline completo. El orquestador limpia los artefactos generados 
+por ejecuciones anteriores antes de iniciar las etapas.
 
 En caso de que el sistema tenga más de un JDK instalado, se puede indicar 
 explícitamente la ubicación del JDK 21 mediante `JAVA21_HOME`.

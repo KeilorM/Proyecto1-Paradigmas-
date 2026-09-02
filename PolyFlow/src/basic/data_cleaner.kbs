@@ -20,12 +20,11 @@
 #   - Wind must be numeric and non-negative.
 #   - Battery must be numeric and between 0 and 100.
 #
-# Known limitation:
-#   BASIC-256 has no structured exception handling. If the input file
-#   ../../data/entrada.csv does not exist, "open" will fail with an
-#   interpreter-level error instead of a controlled message. Make sure
-#   the file exists before running this stage (the Java orchestrator
-#   checks for this before invoking BASIC-256).
+# File validation:
+#   The Java orchestrator verifies that the input file exists and is not
+#   empty before invoking BASIC-256. This keeps file-system validation
+#   outside this stage because BASIC-256 is responsible for record
+#   validation and normalization.
 #
 # Input:
 #   ../../data/entrada.csv

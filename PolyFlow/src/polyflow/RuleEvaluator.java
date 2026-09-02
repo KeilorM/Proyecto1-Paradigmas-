@@ -284,11 +284,12 @@ public final class RuleEvaluator {
             return 40;
         }
     }
-
+  
     /**
      * Parses the external DSL rule file.
      *
-     * <p>Grammar:</p>
+     * <p>
+     * Grammar:</p>
      * <pre>
      * &lt;regla&gt; ::= &lt;identificador&gt; &lt;operador&gt; &lt;numero&gt;
      * &lt;operador&gt; ::= "&gt;" | "&lt;" | "&gt;=" | "&lt;="
@@ -296,19 +297,20 @@ public final class RuleEvaluator {
      *                  | "VIENTO_FUERTE" | "BATERIA_BAJA"
      * </pre>
      *
-     * <p>Blank lines and lines starting with {@code #} are treated as
-     * comments and skipped. Any line that does not match the grammar
-     * above (wrong token count, unknown identifier, unknown operator or
-     * a non-numeric threshold) is silently discarded rather than
-     * aborting the whole file, so a single malformed rule cannot bring
-     * down the pipeline. If the same rule identifier appears more than
-     * once, the last valid occurrence wins and a warning is printed to
-     * standard error so the duplication does not go unnoticed.</p>
+     * <p>
+     * Blank lines and lines starting with {@code #} are treated as comments and
+     * skipped. An individual malformed rule is ignored so that one invalid line
+     * does not stop the complete file from being parsed. If no valid rules
+     * remain after parsing, the Stage 3 process reports an error instead of
+     * treating the system as {@code SYSTEM_OK}. If the same rule identifier
+     * appears more than once, the last valid occurrence wins and a warning is
+     * printed to standard error.</p>
      *
      * @param path path to the DSL rules file (e.g. {@code data/reglas.txt})
-     * @return an ordered map from rule identifier to the parsed
-     *         {@link Regla} instance
-     * @throws IOException if the file does not exist or cannot be read
+     * @return an ordered map from rule identifier to the parsed {@link Regla}
+     * instance
+     * @throws IOException if the file does not exist, cannot be read, or
+     * contains no valid rules
      */
     public static Map<String, Regla> parsearReglas(Path path)
             throws IOException {
@@ -383,11 +385,12 @@ public final class RuleEvaluator {
     /**
      * Reads the Fortran metric CSV produced by Stage 2.
      *
-     * <p>The file's first line is treated as a header and skipped. Each
-     * remaining line is expected to be {@code METRIC,VALUE}; lines that
-     * are blank, malformed, or contain a non-numeric value are ignored
-     * rather than aborting the read, since a single corrupted metric
-     * should not stop rule evaluation for the rest.</p>
+     * <p>
+     * The file's first line is treated as a header and skipped. Each remaining
+     * line is expected to be {@code METRIC,VALUE}. Blank or malformed metric
+     * lines are ignored during parsing. During rule evaluation, however, any
+     * metric required by a valid rule but absent from this file causes Stage 3
+     * to fail, because the inter-stage contract has not been satisfied.</p>
      *
      * @param path path to the metrics file (e.g. {@code data/metricas.csv})
      * @return a map from metric name to its numeric value
@@ -463,25 +466,20 @@ public final class RuleEvaluator {
         Map<String, Double> metrics =
                 readMetrics(metricsPath);
 
-        Map<String, Regla> rules =
-                parsearReglas(rulesPath);
+        Map<String, Regla> rules
+                = parsearReglas(rulesPath);
 
         if (rules.isEmpty()) {
-
-            System.err.println(
-                    "[WARNING] "
-                    + rulesPath
-                    + " contains no valid rules. The generated "
-                    + "report will show SYSTEM_OK, which is "
-                    + "indistinguishable from a genuine all-clear "
-                    + "reading. Verify the rules file if this was "
-                    + "not intended.");
+            throw new IOException(
+                    "Rules file contains no valid rules: "
+                    + rulesPath);
         }
 
-        List<String> alerts =
-                new ArrayList<>();
+        List<String> alerts
+                = new ArrayList<>();
 
-        List<String> sequence =
+        List<String> sequence
+                =
                 new ArrayList<>();
 
         StringBuilder htmlAlerts =
@@ -492,11 +490,13 @@ public final class RuleEvaluator {
 
         for (Regla rule : rules.values()) {
 
-            Double currentValue =
-                    metrics.get(rule.getMetrica());
+            Double currentValue
+                    = metrics.get(rule.getMetrica());
 
             if (currentValue == null) {
-                continue;
+                throw new IOException(
+                        "Required metric not found: "
+                        + rule.getMetrica());
             }
 
             if (rule.evaluar(currentValue)) {
